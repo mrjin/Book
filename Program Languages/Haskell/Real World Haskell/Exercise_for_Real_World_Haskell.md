@@ -164,3 +164,120 @@ listDirection (x:y:[]) = []
 listDirection (x:y:z:xs) = direction x y z : (listDirection (y:z:xs))
 ```
 13.
+
+## Special String-Handling Functions
+1.
+```Haskell
+safeHead :: [a] -> Maybe a
+safeHead [] = Nothing
+safeHead (x:xs) = Just x
+
+safeTail :: [a] -> Maybe [a]
+safeTail [] = Nothing
+safeTail (x:xs) = Just xs
+
+safeLast :: [a] -> Maybe a
+safeLast [] = Nothing
+safeLast (x:[]) = Just x
+safeLast (x:xs) = safeLast xs
+
+safeInit :: [a] -> Maybe [a]
+safeInit [] = Nothing
+safeInit (x:xs) = Just (init (x:xs))
+```
+2.
+```haskell
+splitWith :: (a -> Bool) -> [a] -> [[a]]
+splitWith _ [] = []
+splitWith pred (x:xs) | not (pred x) = splitWith pred xs
+splitWith pred xs = (takeWhile pred xs):(splitWith pred next)
+                    where rest = dropWhile pred xs
+                          rev pred x = not (pred x)
+                          next = dropWhile (rev pred) rest
+```
+
+4.
+```haskell
+transpose' :: String -> String
+transpose' [] = []
+transpose' s = concat (map  f  (zip line1 line2))
+               where [line1,line2] = lines s
+                     f (a,b) = a:b:'\n':[]
+```
+
+## Chapter 4
+1.
+```haskell
+asInt_fold :: String -> Int
+asInt_fold (x:xs) = if x == '-'
+                    then (-1) * (foldl step 0 xs)
+                    else foldl step 0 (x:xs)
+                    where step zero char = 10 * zero + digitToInt char
+asInt_fold [] = 0
+```
+2.
+it can actually cope with these test cases.
+3.
+it did have the same result as that on the book. But I am not sure whether it
+is requiring to add some error sentence in the function.
+4.
+```haskell
+type ErrorMessage = String
+data Ei = Left String
+        | Right Int
+          deriving (Show)
+
+asInt_either' :: String -> Ei
+asInt_either' [] = Main.Left "Contains No Digits"
+asInt_either' ('-':xs) = case (asInt_either' xs) of
+                            Main.Left error -> Main.Left error
+                            Main.Right value -> Main.Right ((-1) * value)
+asInt_either' xs = foldl step (Main.Right 0) xs
+                  where step (Main.Right zero) char | (char >= '0') && (char <= '9') = Main.Right (10 * zero + digitToInt char)
+                                               | otherwise = Main.Left ("non-digit '" ++ [char] ++ "'")
+                        step (Main.Left error) char = Main.Left error
+```
+5.
+can use `:info concat`
+6.
+```haskell
+concat' :: [[a]] -> [a]
+concat' [] = []
+concat' xs = foldr (++) [] xs
+```
+I use foldr to cope with infinite list.
+7.
+```haskell
+takeWhile' :: (a -> Bool) -> [a] -> [a]
+takeWhile' cond (x:xs) | cond x = x : takeWhile' cond xs
+                       | otherwise = []
+takeWhile' _ [] = []
+
+takeWhile'' :: (a -> Bool) -> [a] -> [a]
+takeWhile'' cond xs = foldr step [] xs
+                      where step a b | cond a = a:b
+                                     | otherwise = []
+```
+`takeWhile'` is the explicit recursive and `takeWhile''` is the fold kind.
+8.
+if the character and the following character are the same, then they belong to one
+group.
+9.
+```haskell
+groupBy' :: (a -> a -> Bool) -> [a] -> [[a]]
+groupBy' _ [] = []
+groupBy' cond xs = foldl step [] xs
+                  where step [] c = [[c]]
+                        step x c | cond (head (last x)) c = (init x) ++ [c : (last x)]
+                        step x c | otherwise = x ++ [[c]]
+```
+10.
+```haskell
+any' :: (a -> Bool) -> [a] -> Bool
+any' cond xs = foldr (||) False xs
+```
+Here is a version of `any` in the form of right fold.Given that the short circuit
+exists in Haskell, the right fold seems superior.
+I think that all of them can be realized by folding. But the question is whether
+they need to. For example, cycle, the infinite loop, which can be easily realized
+with explicit recursive.
